@@ -22,8 +22,8 @@ load_dotenv()
 MODEL = os.getenv("LLM_MODEL", "gemini-3.5-flash-lite")
 BASE_URL = os.getenv("LLM_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai/")
 
-PER_CALL_TIMEOUT = 7.0   # секунд на одну спробу
-MAX_ATTEMPTS = 6
+PER_CALL_TIMEOUT = 2.5   # Gemini має двомодальну затримку (~1 с або 5-12 с): ріжемо повільні спроби
+MAX_ATTEMPTS = 10
 
 _client = None
 _client_lock = threading.Lock()
@@ -81,7 +81,10 @@ def chat(messages, *, budget: float = 12.0, **kwargs) -> str:
                 last = e
             else:
                 raise LLMError(f"{type(e).__name__}: {e}") from e
-        sleep = min(0.3 * (2 ** attempt), 3.0) + random.uniform(0, 0.2)
+        if isinstance(last, (openai.APITimeoutError, openai.APIConnectionError)):
+            sleep = random.uniform(0, 0.1)   # повільна спроба — одразу пробуємо ще раз
+        else:
+            sleep = min(0.3 * (2 ** attempt), 3.0) + random.uniform(0, 0.2)
         if time.monotonic() + sleep > deadline - 0.5:
             break
         time.sleep(sleep)
