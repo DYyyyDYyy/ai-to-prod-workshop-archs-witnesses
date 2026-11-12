@@ -1,5 +1,7 @@
 # секрети
 .env
+.env.*
+!.env.example
 
 _organizer/
 
