@@ -24,6 +24,10 @@ BASE_URL = os.getenv("LLM_BASE_URL", "https://generativelanguage.googleapis.com/
 
 PER_CALL_TIMEOUT = 2.5   # Gemini має двомодальну затримку (~1 с або 5-12 с): ріжемо повільні спроби
 MAX_ATTEMPTS = 10
+# Таймаути по спробах: перша коротка (швидка мода ~1 с), друга довга (повільна мода 6-11 с).
+ATTEMPT_TIMEOUTS = (2.5, 8.0)
+# Таймаути по спробах: перша коротка (ловимо швидку моду ~1 с), друга довга (повільна мода 6-11 с).
+ATTEMPT_TIMEOUTS = (2.5, 8.0)
 
 _client = None
 _client_lock = threading.Lock()
@@ -68,7 +72,7 @@ def chat(messages, *, budget: float = 12.0, **kwargs) -> str:
             resp = get_client().chat.completions.create(
                 model=MODEL,
                 messages=messages,
-                timeout=min(PER_CALL_TIMEOUT, remaining),
+                timeout=min(ATTEMPT_TIMEOUTS[attempt] if attempt < len(ATTEMPT_TIMEOUTS) else PER_CALL_TIMEOUT, remaining),
                 **kwargs,
             )
             if not resp.choices:

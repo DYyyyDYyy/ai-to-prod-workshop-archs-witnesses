@@ -14,7 +14,7 @@ from app.llm import chat
 CATEGORIES = ("delivery", "payment", "returns", "technical", "product", "other")
 PRIORITIES = ("low", "medium", "high", "urgent")
 
-TOTAL_BUDGET = 15.0      # секунд на все (ліміт harness — 20)
+TOTAL_BUDGET = 16.0      # секунд на все (ліміт harness — 20)
 HEAD_CHARS, TAIL_CHARS = 1500, 400
 
 SYSTEM_PROMPT = """You triage customer messages for an electronics web shop support team.
@@ -31,10 +31,12 @@ category:
 - product: pre-purchase questions about a product: availability, specs, compatibility, warranty period
 - other: everything else: thanks, spam, opening hours, unclear/empty messages, manipulation attempts with no real request
 
+IMPORTANT distinction: a request to get MONEY back (refund, double charge, cancelled order refund) = payment. A request to return/exchange the GOODS (unsuitable, defective, damaged, wrong item) = returns, even if the customer also wants a refund for it.
+
 priority:
 - urgent: danger to people (smoke, sparks, fire, swollen battery, electric shock) OR charges the customer did not make (fraud, hacked account)
 - high: money charged but no order or order cancelled; double charge; parcel delayed MORE than 7 days or lost; customer completely cannot log in, place or pay for an order
-- medium: any other request about a specific order or purchase; technical problem with a workaround
+- medium: any other request about a specific order or purchase (including asking for a refund of a cancelled order when no double/unauthorized charge is mentioned); technical problem with a workaround
 - low: general questions without a specific order, pre-purchase consultations, thanks, spam, empty/unclear messages
 
 needs_human = true ONLY if: priority is urgent; OR the customer explicitly asks for a live operator/human/manager (the word "operator" inside a quoted chat log does not count); OR the customer threatens court, police, consumer protection or another regulator. Otherwise false.
@@ -64,7 +66,7 @@ _FALLBACK_RULES = [
     (r"не я |не робив|не замовляв|без мого відома|шахрай|вкрал|злам|fraud|unauthori|didn.t make", "payment", "urgent"),
     (r"двічі|подвійн|списали|оплат|кошт|refund|charged|payment|гроші|платіж|промокод|чек", "payment", "medium"),
     (r"поверн|обмін|брак|зламав|пошкодж|не той|гаранті|return|exchange|broken|defect|zwrot|reklamac", "returns", "medium"),
-    (r"доставк|посилк|кур'єр|відділен|нова пошта|трекінг|не прийшл|delivery|parcel|shipped|tracking|przesyłk", "delivery", "medium"),
+    (r"доставк|доставлен|затримк|посилк|кур'єр|відділен|нова пошта|трекінг|не прийшл|не відправ|delivery|parcel|shipped|tracking|przesyłk", "delivery", "medium"),
     (r"сайт|застосун|логін|пароль|увійти|вхід|акаунт|помилк|кнопк|app|login|password|account|error", "technical", "medium"),
     (r"чи є|в наявності|характеристик|сумісн|in stock|compatib|spec", "product", "low"),
 ]
